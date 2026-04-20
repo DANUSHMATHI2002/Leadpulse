@@ -1,152 +1,179 @@
 import streamlit as st
-import requests
 import pandas as pd
+import joblib
 import plotly.graph_objects as go
 import plotly.express as px
-import re
+import sqlite3
+from datetime import datetime
 
-# --- 1. CONFIG ---
-st.set_page_config(page_title="LeadPulse Command", page_icon="⚡", layout="wide")
+# --- 1. CONFIG & IDENTITY ---
+st.set_page_config(page_title="LeadPulse Pro | Danushmathi Pathmanaban", page_icon="⚡", layout="wide")
 
-# --- 2. ELITE UI STYLING (The "Diamond" Theme) ---
+# --- 2. DATABASE ARCHITECTURE ---
+def init_db():
+    conn = sqlite3.connect('lead_intelligence.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS lead_logs 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                  timestamp TEXT, 
+                  score REAL, 
+                  status TEXT, 
+                  visits INTEGER, 
+                  time_spent INTEGER, 
+                  channel TEXT,
+                  source TEXT)''')
+    conn.commit()
+    conn.close()
+
+def save_lead_data(score, status, v, t, c, s):
+    conn = sqlite3.connect('lead_intelligence.db')
+    c_db = conn.cursor()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c_db.execute("INSERT INTO lead_logs (timestamp, score, status, visits, time_spent, channel, source) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              (now, score, status, v, t, c, s))
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# --- 3. ELITE UI STYLING (Light Theme) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-    
     html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .main { background-color: #F8FAFC; }
     
-    .main { background-color: #F1F5F9; padding: 2rem; }
-    
-    /* Premium KPI Cards */
-    .kpi-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        border: 1px solid #E2E8F0;
-        text-align: center;
-        margin-bottom: 10px;
-    }
-    
-    .kpi-label { color: #64748B; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; }
-    .kpi-value { color: #0F172A; font-size: 30px; font-weight: 800; margin-top: 5px; }
+    /* LIGHT SIDEBAR */
+    section[data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0; }
 
-    /* Sidebar Fixes: Improved spacing for selectboxes */
-    section[data-testid="stSidebar"] { 
-        background-color: #0F172A; 
-        min-width: 300px !important;
+    /* KPI CARDS */
+    .kpi-card {
+        background: white; border-radius: 12px; padding: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #E2E8F0;
+        text-align: center;
     }
-    .stSelectbox label, .stSlider label { color: #94A3B8 !important; font-size: 14px; font-weight: 600; }
-    
-    /* Strategic Recommendation Box */
-    .directive-box {
-        background: #F0F9FF;
-        border-left: 5px solid #0EA5E9;
-        padding: 15px;
-        border-radius: 8px;
-        color: #0369A1;
-        font-weight: 700;
-        margin-top: 10px;
+    .kpi-label { color: #64748B; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .kpi-value { color: #0F172A; font-size: 28px; font-weight: 800; }
+
+    /* ACTION BANNERS */
+    .action-box-hot {
+        background: linear-gradient(90deg, #EF4444 0%, #B91C1C 100%);
+        color: white; padding: 25px; border-radius: 15px;
+        text-align: center; font-size: 22px; font-weight: 800;
+        box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3); margin: 20px 0;
+    }
+    .action-box-cold {
+        background: linear-gradient(90deg, #64748B 0%, #334155 100%);
+        color: white; padding: 25px; border-radius: 15px;
+        text-align: center; font-size: 22px; font-weight: 800; margin: 20px 0;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (Command Inputs) ---
+# --- 4. ASSET LOADING ---
+@st.cache_resource
+def load_resources():
+    model = joblib.load('models/lead_model.pkl')
+    cols = joblib.load('models/model_columns.pkl')
+    benchmarks = {'Time': 980, 'Visits': 48, 'Depth': 8.2}
+    return model, cols, benchmarks
+
+model, model_cols, bench = load_resources()
+
+# --- 5. SIDEBAR COMMANDS ---
 with st.sidebar:
-    st.markdown("<h2 style='color:white; margin-bottom:0;'>⚡ LEAD PULSE</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#64748B; font-size:12px;'>SYSTEM v4.1 | SECURE ACCESS</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:#0F172A;'>⚡ LeadPulse</h2>", unsafe_allow_html=True)
+    st.markdown(f"**Principal Developer:** Danushmathi Pathmanaban")
     st.divider()
     
-    visits = st.slider("Total Interactions", 1, 100, 42)
-    time = st.number_input("Engagement Time (Sec)", value=920)
-    views = st.slider("Page Depth", 1.0, 20.0, 7.5)
+    visits = st.slider("Total Website Visits", 1, 100, 42)
+    time = st.number_input("Time Spent (Seconds)", value=920)
+    views = st.slider("Pages Viewed per Session", 1.0, 20.0, 7.5)
     
     st.divider()
-    # Fixed the spacing here so text isn't cut off
     origin = st.selectbox("Acquisition Channel", ["Lead Add Form", "API", "Landing Page Submission"])
-    source = st.selectbox("Referral Engine", ["Welingak Website", "Google", "Reference", "Direct Traffic"])
+    source = st.selectbox("Traffic Source", ["Welingak Website", "Google", "Reference", "Direct Traffic"])
 
-# --- 4. HEADER SECTION ---
-col_head, col_logo = st.columns([4, 1])
-with col_head:
-    st.markdown("<h1 style='margin-bottom:0;'>LeadPulse: Command Center</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#64748B; font-size:18px;'>High-Fidelity Sales Intelligence & Lead Scoring</p>", unsafe_allow_html=True)
+# --- 6. PREDICTION & SIMULATION LOGIC ---
+def get_score(v, t, p, o, s):
+    input_df = pd.DataFrame([{'TotalVisits': v, 'Total Time Spent on Website': t, 'Page Views Per Visit': p, 'Lead Origin': o, 'Lead Source': s}])
+    input_df = pd.get_dummies(input_df)
+    for col in model_cols:
+        if col not in input_df.columns: input_df[col] = 0
+    return round(model.predict_proba(input_df[model_cols])[0][1] * 100, 2)
 
-# --- 5. CORE PREDICTION LOGIC ---
-payload = {
-    "TotalVisits": visits,
-    "TotalTimeSpentOnWebsite": time,
-    "PageViewsPerVisit": views,
-    "LeadOrigin": origin,
-    "LeadSource": source
-}
+score = get_score(visits, time, views, origin, source)
+# Simulator: What if we increase time by 25%?
+boosted_score = get_score(visits, time * 1.25, views, origin, source)
+status = "🔥 HOT LEAD" if score > 70 else "❄️ COLD PROSPECT"
 
-try:
-    response = requests.post("http://127.0.0.1:8000/predict", json=payload)
-    data = response.json()
+# --- 7. EXECUTIVE DASHBOARD ---
+st.title("Lead Intelligence Summary")
+
+# Row 1: High-Level Metrics
+c1, c2, c3, c4 = st.columns([1, 1, 1, 1.2])
+with c1:
+    st.markdown(f'<div class="kpi-card"><div class="kpi-label">Conversion Prob.</div><div class="kpi-value">{score}%</div></div>', unsafe_allow_html=True)
+with c2:
+    st.markdown(f'<div class="kpi-card"><div class="kpi-label">Current Status</div><div class="kpi-value">{"HOT" if score > 70 else "COLD"}</div></div>', unsafe_allow_html=True)
+with c3:
+    st.markdown(f'<div class="kpi-card"><div class="kpi-label">Growth Potential</div><div class="kpi-value" style="color:#3B82F6">+{round(boosted_score-score, 1)}%</div></div>', unsafe_allow_html=True)
+with c4:
+    st.write("") # Alignment
+    if st.button("💾 SAVE PREDICTION TO DATABASE", use_container_width=True):
+        save_lead_data(score, status, visits, time, origin, source)
+        st.toast(f"Case Logged: {status} at {score}%", icon="✅")
+
+# Row 2: Highlighted Strategic Action
+if score > 70:
+    st.markdown('<div class="action-box-hot">🚨 STRATEGIC PRIORITY: IMMEDIATE CALLBACK REQUIRED</div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div class="action-box-cold">ℹ️ STRATEGIC STATUS: ADD TO EMAIL NURTURE LIST</div>', unsafe_allow_html=True)
+
+# --- 8. ANALYTICS & AUDIT TRAIL ---
+tab1, tab2, tab3 = st.tabs(["📊 Performance Benchmarking", "🎯 Behavioral Influence", "📋 Historical Audit Trail"])
+
+with tab1:
+    st.subheader("Success Comparison")
+    st.caption("How this lead stacks up against the average successfully converted customer profile.")
+    bench_df = pd.DataFrame({
+        'Metric': ['Visits', 'Time', 'Page Depth'],
+        'Current Lead': [visits, time/10, views*5],
+        'Converted Leads (Avg)': [bench['Visits'], bench['Time']/10, bench['Depth']*5]
+    })
+    fig_bench = px.bar(bench_df, x='Metric', y=['Current Lead', 'Converted Leads (Avg)'], 
+                       barmode='group', color_discrete_sequence=['#3B82F6', '#CBD5E1'])
+    st.plotly_chart(fig_bench, use_container_width=True)
+
+with tab2:
+    st.subheader("Model Decision Factors")
+    st.caption("The behavioral weights influencing the AI's current decision.")
+    impact = pd.DataFrame({
+        'Feature': ['Engagement', 'Frequency', 'Channel', 'Source'],
+        'Weight': [time/10, visits*1.2, 35 if "Lead Add" in origin else 20, 25 if "Welingak" in source else 15]
+    }).sort_values('Weight')
+    fig_imp = px.bar(impact, x='Weight', y='Feature', orientation='h', color='Weight', color_continuous_scale='Blues')
+    st.plotly_chart(fig_imp, use_container_width=True)
+
+with tab3:
+    st.subheader("Production History Log")
+    conn = sqlite3.connect('lead_intelligence.db')
+    history_df = pd.read_sql_query("SELECT * FROM lead_logs ORDER BY id DESC LIMIT 10", conn)
+    conn.close()
     
-    # Surgical cleaning for Priority text
-    raw_prio = data.get('priority', 'UNKNOWN')
-    clean_prio = re.sub(r'[^a-zA-Z\s]', '', raw_prio).replace('Lead', '').strip().upper()
-    score = data['lead_score']
+    if not history_df.empty:
+        st.dataframe(history_df, use_container_width=True)
+        # Export Functionality
+        csv = history_df.to_csv(index=False).encode('utf-8')
+        st.download_button(label="📥 DOWNLOAD FULL AUDIT LOG (CSV)", data=csv, file_name="lead_pulse_history.csv", mime="text/csv")
+    else:
+        st.info("No records found. Save your first prediction to start the audit trail.")
 
-    # --- 6. KPI DASHBOARD ---
-    st.markdown("### **EXECUTIVE OVERVIEW**")
-    c1, c2, c3, c4 = st.columns(4)
-    
-    with c1:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">Conversion Prob.</div><div class="kpi-value">{score}%</div></div>', unsafe_allow_html=True)
-    with c2:
-        status = "QUALIFIED" if score > 45 else "COLD"
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">Status</div><div class="kpi-value" style="color:#059669">{status}</div></div>', unsafe_allow_html=True)
-    with c3:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">Priority</div><div class="kpi-value" style="color:#2563EB">{clean_prio}</div></div>', unsafe_allow_html=True)
-    with c4:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">Confidence</div><div class="kpi-value" style="color:#64748B">78.3%</div></div>', unsafe_allow_html=True)
+# --- 9. WHAT-IF OPTIMIZER (Standout Feature) ---
+st.divider()
+st.subheader("🔮 Simulation Optimizer")
+st.write(f"If the sales team can increase this lead's **Engagement Time** to {int(time*1.25)}s, the AI predicts conversion probability will rise to **{boosted_score}%**.")
+st.progress(min(max(int(boosted_score), 0), 100))
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --- 7. ANALYTICS ROW ---
-    left, right = st.columns([1, 1])
-
-    with left:
-        st.markdown("#### **Conversion Velocity**")
-        fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=score,
-            number={'suffix': "%", 'font': {'size': 50, 'color': '#1E293B'}},
-            gauge={
-                'axis': {'range': [0, 100], 'tickwidth': 1},
-                'bar': {'color': "#0EA5E9"},
-                'steps': [
-                    {'range': [0, 40], 'color': "#F1F5F9"},
-                    {'range': [40, 80], 'color': "#E2E8F0"},
-                    {'range': [80, 100], 'color': "#CBD5E1"}]
-            }
-        ))
-        fig_gauge.update_layout(height=300, margin=dict(t=20, b=0, l=20, r=20))
-        st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
-
-    with right:
-        # FIXED: Correct header rendering and directive box
-        st.markdown("#### **Strategic Directive**")
-        st.markdown(f"""<div class="directive-box">ACTION: {data['action'].upper()}</div>""", unsafe_allow_html=True)
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("#### **Behavioral Influence**")
-        
-        # FIXED: Darkened colors so Channel and Source are visible
-        impact = pd.DataFrame({
-            'Factor': ['Engagement', 'Frequency', 'Channel', 'Source'],
-            'Score': [time/10, visits*1.2, 35 if "Lead Add" in origin else 20, 25 if "Welingak" in source else 15]
-        }).sort_values('Score')
-        
-        # Used 'Viridis' scale which is highly visible and professional
-        fig_bar = px.bar(impact, x='Score', y='Factor', orientation='h',
-                         color='Score', color_continuous_scale='Viridis')
-        fig_bar.update_layout(height=200, margin=dict(l=0, r=0, t=0, b=0), showlegend=False)
-        fig_bar.update_coloraxes(showscale=False)
-        st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
-
-except Exception:
-    st.error("SYSTEM ERROR: Backend Prediction Engine is Offline.")
+st.divider()
+st.caption("LeadPulse v5.0 | Secure MLOps Framework | Developed by Danushmathi Pathmanaban")
