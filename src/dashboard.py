@@ -83,7 +83,7 @@ model, model_cols, bench = load_resources()
 # --- 5. SIDEBAR COMMANDS ---
 with st.sidebar:
     st.markdown("<h2 style='color:#0F172A;'>⚡ LeadPulse</h2>", unsafe_allow_html=True)
-    st.markdown(f"**Principal Developer:** Danushmathi Pathmanaban")
+    st.markdown(f"**Principal Developers:** Danushmathi & Srivarshan")
     st.divider()
     
     visits = st.slider("Total Website Visits", 1, 100, 42)
@@ -176,4 +176,4 @@ st.write(f"If the sales team can increase this lead's **Engagement Time** to {in
 st.progress(min(max(int(boosted_score), 0), 100))
 
 st.divider()
-st.caption("LeadPulse v5.0 | Secure MLOps Framework | Developed by Danushmathi Pathmanaban")
+st.caption("LeadPulse v5.0 | Secure MLOps Framework | Developed by Danushmathi & Srivarshan")
