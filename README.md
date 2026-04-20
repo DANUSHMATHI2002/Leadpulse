@@ -1,8 +1,8 @@
 # 🎯 LeadPulse: Strategic Sales Intelligence
 
 **Developers:** Danushmathi Pathmanaban & Srivarshan Meiprakash  
-**Project Type:** End-to-End MLOps & Predictive Analytics  
-**Deployment:** Streamlit Community Cloud
+**Project Type:** End-to-End MLOps & Predictive Analytics    
+**Deployment:** Streamlit Community Cloud  
 
 ---
 
@@ -32,56 +32,76 @@ This enables sales teams to:
 
 ### 🌲 The Algorithm: Random Forest Classifier
 
-To achieve high precision in lead scoring, we utilized a **Random Forest Ensemble**. This choice was strategic based on the nature of sales data:
+To achieve high precision in lead scoring, we utilized a **Random Forest Ensemble**:
 
-* **Ensemble Logic:**
-  The model constructs multiple decision trees during training and combines their outputs. It uses **Bagging (Bootstrap Aggregating)** to ensure no single noisy data point dominates predictions.
-
-* **Handling Non-Linearity:**
-  Web behavioral data (e.g., time spent vs. pages viewed) is highly non-linear. Random Forest effectively captures these relationships without requiring heavy feature engineering or scaling.
-
-* **Feature Importance:**
-  The model ranks features by their influence on prediction outcomes. This powers the **Behavioral Influence** chart in the dashboard.
+* Ensemble of decision trees using Bagging
+* Handles non-linear behavioral patterns
+* Provides feature importance for insights
 
 ---
 
 ### 🔄 The MLOps Framework: MLflow
 
-We integrated MLflow to transform this project into a complete **Machine Learning Lifecycle system**:
+We integrated MLflow to transform this project into a complete Machine Learning lifecycle system:
 
-1. **Experiment Tracking**
+* Experiment tracking
+* Artifact storage
+* Model reproducibility
 
-   * Logs hyperparameters such as `n_estimators` and `max_depth`
-   * Tracks evaluation metrics: **Accuracy, Precision, Recall**
+---
 
-2. **Artifact Logging**
+## 🏗️ MLOps Lifecycle: MLflow Integration
 
-   * Stores trained `.pkl` models
-   * Saves feature column schema for consistent inference
+To move beyond "Notebook-based" development, this project utilizes **MLflow** to manage the end-to-end Machine Learning lifecycle. This ensures that every model deployed to the dashboard is reproducible and scientifically tracked.
 
-3. **Reproducibility**
+### 1. Experiment Tracking
 
-   * Maintains a version-controlled record of experiments
-   * Enables auditing and rollback of model versions
+Every training run is captured in the MLflow tracking server. We log:
+
+* **Hyperparameters:** `n_estimators`, `max_depth`, `min_samples_split`
+* **Performance Metrics:** Accuracy, Precision, Recall, F1-Score
+* **System Metadata:** Execution time, user credentials, and git commit hashes
+
+### 2. Artifact Logging & Model Versioning
+
+Instead of manually moving files, MLflow automatically packages:
+
+* Serialized **Random Forest model** (`.pkl`)
+* **Environment dependencies** for reproducibility
+* **Feature signatures** to ensure correct input structure
+
+### 3. Reproducibility & Governance
+
+MLflow maintains a complete audit trail of experiments:
+
+* Compare multiple model versions
+* Track improvements over time
+* Roll back to best-performing models easily
+
+---
+
+## 🛠️ How to View the MLflow Dashboard
+
+If running locally:
+
+```bash
+mlflow ui
+```
+
+Then open:
+
+```
+http://localhost:5000
+```
 
 ---
 
 ## 📈 Key Features
 
-* ⚡ **Real-Time Lead Scoring**
-  Instantly predicts conversion probability using the trained model
-
-* 🗂️ **Audit Trail & Persistence**
-  SQLite database logs every prediction for tracking and analysis
-
-* 🔮 **What-If Simulation**
-  Simulates how engagement improvements affect conversion likelihood
-
-* 🎯 **Strategic Directives**
-  Automatically categorizes leads:
-
-  * **Hot Leads → Immediate Call**
-  * **Cold Leads → Email Nurture**
+* ⚡ Real-Time Lead Scoring
+* 🗂️ SQLite Audit Trail
+* 🔮 What-If Simulation
+* 🎯 Strategic Lead Classification
 
 ---
 
@@ -89,50 +109,46 @@ We integrated MLflow to transform this project into a complete **Machine Learnin
 
 ```
 Leadpulse/
-├── data/                  # Raw and processed datasets
+├── data/
 ├── models/
-│   ├── lead_model.pkl     # Trained Random Forest model
-│   └── model_columns.pkl  # Feature columns used for inference
+│   ├── lead_model.pkl
+│   └── model_columns.pkl
 ├── src/
-│   └── dashboard.py       # Streamlit application & SQLite logic
-├── train.py               # MLflow training & experiment script
-├── requirements.txt       # Project dependencies
-├── LICENSE                # MIT License
-└── README.md              # Project documentation
+│   └── dashboard.py
+├── train.py
+├── requirements.txt
+├── LICENSE
+└── README.md
 ```
 
 ---
 
 ## 💻 Installation & Setup
 
-### 1️⃣ Clone the Repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/DANUSHMATHI2002/Leadpulse.git
 cd Leadpulse
 ```
 
----
+### 2. Create Virtual Environment
 
-### 2️⃣ Set Up Virtual Environment (Recommended)
-
-#### 🪟 Windows
+#### Windows
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 ```
 
-#### 🍎 macOS / 🐧 Linux
+#### macOS/Linux
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
----
-
-### 3️⃣ Install Dependencies
+### 3. Install Dependencies
 
 ```bash
 pip install --upgrade pip
@@ -143,23 +159,13 @@ pip install -r requirements.txt
 
 ## 🚀 How to Run
 
-### 🧪 Step 1: Model Training
-
-Run the training script to:
-
-* Initialize MLflow experiment tracking
-* Train the Random Forest model
-* Save artifacts in the `/models` directory
+### Train Model
 
 ```bash
 python train.py
 ```
 
----
-
-### 📊 Step 2: Launch the Dashboard
-
-Start the interactive Streamlit application:
+### Run Dashboard
 
 ```bash
 streamlit run src/dashboard.py
@@ -167,47 +173,31 @@ streamlit run src/dashboard.py
 
 ---
 
-## 📊 Application Workflow
-
-1. User inputs lead interaction data
-2. Model processes features and predicts conversion probability
-3. Lead is classified (Hot / Cold)
-4. Recommendation is generated
-5. Result is logged into SQLite database
-6. Dashboard updates with insights and visualizations
-
----
-
 ## 📌 Future Enhancements
 
-* 🔗 CRM Integration (Salesforce, HubSpot)
-* ⚡ Real-time streaming data pipelines
-* 🤖 AutoML for hyperparameter tuning
-* 🔐 Role-based access control for dashboard
-* ☁️ Cloud-native deployment (AWS/GCP/Azure)
+* CRM integrations
+* Real-time pipelines
+* AutoML tuning
+* Role-based dashboards
 
 ---
 
 ## 📜 License
 
-This project is licensed under the **MIT License**.
+MIT License
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome!
-
-Steps:
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to your fork
-5. Open a Pull Request
+```bash
+git add README.md
+git commit -m "Added MLOps and MLflow lifecycle documentation"
+git push
+```
 
 ---
 
 ## ⭐ Support
 
-If you found this project useful, consider giving it a **star ⭐ on GitHub** — it helps increase visibility and supports the project!
+If you found this project useful, give it a ⭐ on GitHub!
