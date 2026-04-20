@@ -1,6 +1,6 @@
 # 🎯 LeadPulse: Strategic Sales Intelligence
 
-**Developer:** Danushmathi Pathmanaban  
+**Developer:** Danushmathi Pathmanaban , Srivarshan Meiprakash
 **Project Type:** End-to-End MLOps & Predictive Analytics  
 **Deployment:** Streamlit Community Cloud
 
