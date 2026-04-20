@@ -5,7 +5,7 @@
 **Deployment:** Streamlit Community Cloud
 
 ## 🚀 Project Overview
-LeadPulse is a full-stack Machine Learning application designed to prioritize sales leads using predictive analytics. By analyzing historical interaction data, the system identifies "Hot Leads" with a high probability of conversion, allowing sales teams to optimize their workflow and focus human effort where it generates the highest ROI.
+LeadPulse is a full-stack Machine Learning application designed to prioritize sales leads using predictive analytics. By analyzing historical interaction data, the system identifies "Hot Leads" with a high probability of conversion, allowing sales teams to optimize their workflow and focus human effort where it generates the highest ROI. This project was developed to demonstrate end-to-end ML lifecycle management (MLOps), from data preprocessing to cloud deployment.
 
 ## 🛠️ Tech Stack
 - **Machine Learning:** Random Forest Classifier (Scikit-Learn)
@@ -48,4 +48,3 @@ git clone [https://github.com/DANUSHMATHI2002/Leadpulse.git](https://github.com/
 cd Leadpulse
 
 
-*This project was developed as part of a Master's portfolio to demonstrate end-to-end ML lifecycle management (MLOps), from data preprocessing to cloud deployment.*
