@@ -1,5 +1,7 @@
 # 🎯 LeadPulse: Strategic Sales Intelligence
 
+Click Here - 🚀 **[View Live Dashboard](https://huggingface.co/spaces/danush2002/LeadPulse)**  
+
 **Developers:** Danushmathi Pathmanaban & Srivarshan Meiprakash  
 **Project Type:** End-to-End MLOps & Predictive Analytics    
 **Deployment:** Streamlit Community Cloud  
